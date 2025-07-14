@@ -33,7 +33,7 @@ st.write("질문을 입력하고 답변을 받아보세요.")
 # 저장 가능한 메모리 생성
 if 'messages' not in st.session_state:
     st.session_state.messages = []
-
+###
 # 채팅 메시지 표시    
 for message in st.session_state.messages:
     st.chat_message(message["role"]).write(message["content"])
