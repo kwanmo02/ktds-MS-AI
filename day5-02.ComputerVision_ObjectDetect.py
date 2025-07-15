@@ -1,6 +1,7 @@
 import requests
 import os
 from dotenv import load_dotenv
+from PIL import Image, ImageDraw, ImageFont
 
 load_dotenv()
 
@@ -27,7 +28,6 @@ def analyze_image(image_path):
     
     return response.json()
 
-
 def object_detect(image_path):
     ENDPOINT_URL = COMPUTER_VISION_ENDPOINT + "vision/v3.2/detect"
 
@@ -48,6 +48,30 @@ def object_detect(image_path):
     return response.json()
 
 
+## 바운딩 박스
+def draw_bounding_boxes(image_path, objects):
+    try:
+        image = Image.open(image_path)
+    except Exception as e:
+        print(f"Error opening image file: {e}")
+        return None
+    draw = ImageDraw.Draw(image)
+
+    for obj in objects:
+        rectangle = obj["rectangle"]
+        x, y, w, h = rectangle["x"], rectangle["y"], rectangle["w"], rectangle["h"]
+        draw.rectangle([x, y, x + w, y + h], outline="red", width=2)
+
+    prats = image_path.split(".")
+
+    if len(prats) == 2: #확장자가 있다면
+        output_path = f"{prats[0]}_detected.{prats[1]}"
+    else :
+        output_path = f"{image_path}_detected"
+
+    image.save(output_path)
+    image.show()
+
 def main():
     image_path = input("Enter the path to the image file: ")
 
@@ -62,11 +86,7 @@ def main():
     elif choice == "2":
         print("Detecting objects in image...")    
         result = object_detect(image_path)
-        
-        objects = result["objects"]
-        for obj in objects:
-            print(obj)
-
+        draw_bounding_boxes(image_path, result["objects"])
     else :
         print("invalid choice. Please choose 1 for analyzing")
           
