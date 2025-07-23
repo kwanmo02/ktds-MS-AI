@@ -235,6 +235,20 @@ all_clusters = [c for c, _ in cluster_counts.most_common(50)]  # 옵션 리스�
 st.write("📌 all_clusters 옵션:", all_clusters)
 
 
+
+if len(all_clusters) > 0:
+    selected_clusters = st.sidebar.multiselect(
+        "클러스터 명 선택 (선택 시 해당 클러스터만 시각화됩니다)",
+        options=all_clusters,
+        default=st.session_state.selected_clusters,
+        key="cluster_multiselect"
+    )
+    st.session_state.selected_clusters = selected_clusters
+else:
+    st.sidebar.info("현재 선택할 수 있는 클러스터가 없습니다.")
+
+
+
 # 2) session_state에 선택값이 없으면 초기화
 if "selected_clusters" not in st.session_state:
     st.session_state.selected_clusters = []
@@ -244,7 +258,7 @@ selected_clusters = st.sidebar.multiselect(
     "클러스터 명 선택 (선택 시 해당 클러스터만 시각화됩니다)",
     options=all_clusters,
     default=st.session_state.selected_clusters,
-    key="cluster_multiselect"
+    key="cluster_multiselectmm"
 )
 
 # 4) 선택한 값 저장
@@ -252,6 +266,15 @@ st.session_state.selected_clusters = selected_clusters
 
 # 5) 디버깅 출력 (선택 잘 됐는지 확인용, 필요시 삭제 가능)
 st.write("✅ 선택된 클러스터 (session_state):", st.session_state.selected_clusters)
+
+
+
+
+
+
+
+
+
 
 # ----------------------------------------------------------------
 # 5. 시각화 (선택 여부에 따른 분기)
