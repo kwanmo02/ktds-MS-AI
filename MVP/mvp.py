@@ -252,16 +252,6 @@ else:
 
 
 
-
-
-# 3) 멀티셀렉트 UI 생성 (default를 session_state에서 불러옴)
-selected_clusters = st.sidebar.multiselect(
-    "클러스터 명 선택 (선택 시 해당 클러스터만 시각화됩니다)",
-    options=all_clusters,
-    default=st.session_state.selected_clusters,
-    key="cluster_multiselectmm"
-)
-
 # 4) 선택한 값 저장
 st.session_state.selected_clusters = selected_clusters
 
