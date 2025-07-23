@@ -235,6 +235,9 @@ all_clusters = [c for c, _ in cluster_counts.most_common(50)]  # 옵션 리스�
 st.write("📌 all_clusters 옵션:", all_clusters)
 
 
+# 2) session_state에 선택값이 없으면 초기화
+if "selected_clusters" not in st.session_state:
+    st.session_state.selected_clusters = []
 
 if len(all_clusters) > 0:
     selected_clusters = st.sidebar.multiselect(
@@ -249,9 +252,7 @@ else:
 
 
 
-# 2) session_state에 선택값이 없으면 초기화
-if "selected_clusters" not in st.session_state:
-    st.session_state.selected_clusters = []
+
 
 # 3) 멀티셀렉트 UI 생성 (default를 session_state에서 불러옴)
 selected_clusters = st.sidebar.multiselect(
