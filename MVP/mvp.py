@@ -49,14 +49,14 @@ def create_cluster_network(results, cluster_list=None, cluster_limit=10, title_l
         y_nodes.append(pos[node][1])
         z_nodes.append(pos[node][2])
     node_color, node_size, node_labels, node_hovertexts = [], [], [], []
-    def scale_size(freq, base=8, max_scale=40):
+    def scale_size(freq, base=16, max_scale=60):
         return min(base + freq * 2, max_scale)
     for n in G.nodes():
         t = G.nodes[n].get("node_type", "")
         freq = G.nodes[n].get("frequency", 1)
         # 오직 cluster, title 노드만 시각화
         if t == "cluster":
-            color = "#FF9800"
+            color = "#DB1A1A"
             size = scale_size(freq)
             label = n
             hover_text = f"<b>{n}</b><br>유형: {t}<br>VOC 건수: {freq}"
@@ -194,7 +194,7 @@ def analyze_titles_parallel(titles):
 # ----------------------------------------------------------------
 # 4. Streamlit UI/실행부
 # ----------------------------------------------------------------
-st.title("🧠 클러스터 기준 VOC 네트워크")
+st.title("🧠 VOC Insight 네트워크 분석")
 
 with st.sidebar:
     st.subheader("🔍 키워드 검색")
@@ -203,7 +203,7 @@ with st.sidebar:
         search = st.text_input(" ", placeholder="예: 우수기변, 번호이동", label_visibility="collapsed")
     with col2:
         search_btn = st.button("조회")
-    sample_size = st.slider("샘플 수", 10, 1000, 200)
+    sample_size = st.slider("샘플 수", 10, 1000, 100)
     cluster_limit = st.slider("표시할 클러스터 수", 1, 30, 10)
     title_limit = st.slider("클러스터당 제목 수", 1, 20, 5)
 
@@ -217,24 +217,49 @@ if filtered_df.empty:
     st.warning("📭 조건에 맞는 VOC가 없습니다.")
     st.stop()
 
-with st.spinner("🤖 GPT 분석 중..."):
-    analysis_results = analyze_titles_parallel(filtered_df["문의제목"].tolist())
-    cluster_counts = Counter([r['cluster'] for _, r in analysis_results])
-    all_clusters = [c for c, _ in cluster_counts.most_common()]
 
-    # ⬇️ 사용자 클러스터 직접 선택 기능
-    st.sidebar.markdown("#### 🔘 클러스터 직접 선택(다중 가능)")
-    selected_clusters = st.sidebar.multiselect(
-        "클러스터 명 선택 (선택 시 해당 클러스터만 시각화됩니다.)",
-        all_clusters[:50],  # 너무 많을 경우 상위 N개로 제한
-        default=None,
-        key="cluster_multiselect"
-    )
+# ----------------------------------------------------------------
+# 3. 필터링된 데이터에 한해 GPT 분석 수행
+# ----------------------------------------------------------------
+with st.spinner("🤖 필터링된 VOC 분석 진행 중..."):
+    filtered_analysis_results = analyze_titles_parallel(filtered_df["문의제목"].tolist())
 
-    if selected_clusters:
-        create_cluster_network(analysis_results, selected_clusters, cluster_limit, title_limit)
-        st.stop()
+# ----------------------------------------------------------------
+# 4. 클러스터 선택 UI & 분기 (최종 추천 구조, session_state 버전)
+# ----------------------------------------------------------------
 
-    # ⬇️ 선택이 없으면 자동으로 빈도순 상위 N개 클러스터 기준 네트워크 시각화
-    st.subheader("📌 빈도기준 상위 클러스터 네트워크")
-    create_cluster_network(analysis_results, None, cluster_limit, title_limit)
+# 1) 필터링된 결과에서 클러스터 옵션 생성
+cluster_counts = Counter([r['cluster'] for _, r in filtered_analysis_results])
+all_clusters = [c for c, _ in cluster_counts.most_common(50)]  # 옵션 리스트
+
+st.write("📌 all_clusters 옵션:", all_clusters)
+
+
+# 2) session_state에 선택값이 없으면 초기화
+if "selected_clusters" not in st.session_state:
+    st.session_state.selected_clusters = []
+
+# 3) 멀티셀렉트 UI 생성 (default를 session_state에서 불러옴)
+selected_clusters = st.sidebar.multiselect(
+    "클러스터 명 선택 (선택 시 해당 클러스터만 시각화됩니다)",
+    options=all_clusters,
+    default=st.session_state.selected_clusters,
+    key="cluster_multiselect"
+)
+
+# 4) 선택한 값 저장
+st.session_state.selected_clusters = selected_clusters
+
+# 5) 디버깅 출력 (선택 잘 됐는지 확인용, 필요시 삭제 가능)
+st.write("✅ 선택된 클러스터 (session_state):", st.session_state.selected_clusters)
+
+# ----------------------------------------------------------------
+# 5. 시각화 (선택 여부에 따른 분기)
+# ----------------------------------------------------------------
+if selected_clusters:
+    cluster_selected = selected_clusters[0]
+    st.subheader(f"🎯 선택 클러스터 집중 분석: {cluster_selected}")
+    create_cluster_network(filtered_analysis_results, [cluster_selected], cluster_limit=1, title_limit=title_limit)
+else:
+    st.subheader("📌 필터링된 VOC 기준 상위 클러스터 네트워크")
+    create_cluster_network(filtered_analysis_results, None, cluster_limit, title_limit)
