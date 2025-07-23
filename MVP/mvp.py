@@ -203,7 +203,7 @@ with st.sidebar:
         search = st.text_input(" ", placeholder="예: 우수기변, 번호이동", label_visibility="collapsed")
     with col2:
         search_btn = st.button("조회")
-    sample_size = st.slider("샘플 수", 10, 1000, 100)
+    sample_size = st.slider("샘플 수", 10, 1000, 200)
     cluster_limit = st.slider("표시할 클러스터 수", 1, 30, 10)
     title_limit = st.slider("클러스터당 제목 수", 1, 20, 5)
 
