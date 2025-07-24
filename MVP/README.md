@@ -54,4 +54,4 @@ VOC 군집 분석을 통하여 빈도수가 많은 이슈 분석 및 개선 Poin
 
 ## 7. 시연영상
 
-## [시연 영상 보기](file:///C:/Users/ktds/Desktop/ktds_km_webapp/시현영상.mp4)
+[시연 영상 보기](./media/시현영상.mp4)
