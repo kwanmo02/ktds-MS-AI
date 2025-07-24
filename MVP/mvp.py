@@ -4,6 +4,7 @@ import json
 from io import BytesIO
 from collections import Counter
 import concurrent.futures
+import difflib 
 
 import pandas as pd
 import networkx as nx
@@ -228,52 +229,76 @@ with st.spinner("🤖 필터링된 VOC 분석 진행 중..."):
 # 4. 클러스터 선택 UI & 분기 (최종 추천 구조, session_state 버전)
 # ----------------------------------------------------------------
 
-# 1) 필터링된 결과에서 클러스터 옵션 생성
+
+
+
+
+
+# 1) 클러스터 목록 생성
 cluster_counts = Counter([r['cluster'] for _, r in filtered_analysis_results])
-all_clusters = [c for c, _ in cluster_counts.most_common(50)]  # 옵션 리스트
-
-st.write("📌 all_clusters 옵션:", all_clusters)
+all_clusters = [c for c, _ in cluster_counts.most_common(50)]  # 상위 50개 클러스터 옵션
 
 
-# 2) session_state에 선택값이 없으면 초기화
-if "selected_clusters" not in st.session_state:
-    st.session_state.selected_clusters = []
+st.session_state['current_clusters'] = all_clusters  # 전역/세션 상태 저장
 
-if len(all_clusters) > 0:
-    selected_clusters = st.sidebar.multiselect(
-        "클러스터 명 선택 (선택 시 해당 클러스터만 시각화됩니다)",
-        options=all_clusters,
-        default=st.session_state.selected_clusters,
-        key="cluster_multiselect"
-    )
-    st.session_state.selected_clusters = selected_clusters
-else:
-    st.sidebar.info("현재 선택할 수 있는 클러스터가 없습니다.")
+# --- 3) 클러스터 이름 입력 UI ---
+current_all_clusters = st.session_state.get('current_clusters', [])
 
+text_input = st.sidebar.text_area(
+    "📝 클러스터 이름 입력 (복수 입력은 줄바꿈 또는 쉼표로 구분)",
+    placeholder="예: " + ", ".join(current_all_clusters[:3])
+)
 
+raw_inputs = re.split(r'[\n,]+', text_input.strip())
+selected_raw = [s.strip() for s in raw_inputs if s.strip()]
 
-# 4) 선택한 값 저장
-st.session_state.selected_clusters = selected_clusters
+def normalize(s):
+    return re.sub(r'\s+', '', s).lower()
 
-# 5) 디버깅 출력 (선택 잘 됐는지 확인용, 필요시 삭제 가능)
-st.write("✅ 선택된 클러스터 (session_state):", st.session_state.selected_clusters)
+# --- 4) 유연한 매칭 (완전 일치 -> 부분 포함 -> 유사도) ---
+matched_clusters = []
+for user_input in selected_raw:
+    norm_input = normalize(user_input)
+    
+    # 1) 완전 일치
+    exact = [c for c in current_all_clusters if normalize(c) == norm_input]
+    if exact:
+        matched_clusters.append(exact[0])
+        continue
+    
+    # 2) 부분 포함 매칭
+    partial = [c for c in current_all_clusters if norm_input and norm_input in normalize(c)]
+    if partial:
+        matched_clusters.append(partial[0])
+        continue
+    
+    # 3) 유사도 75% 이상
+    close = difflib.get_close_matches(user_input, current_all_clusters, n=1, cutoff=0.75)
+    if close:
+        matched_clusters.append(close[0])
 
+# 중복 제거
+final_selected_clusters = list(dict.fromkeys(matched_clusters))
 
+# --- 5) 상태 출력 (디버깅/확인용) ---
+st.write("✅ 입력된 클러스터:", selected_raw)
+st.write("✅ 매칭된 클러스터:", final_selected_clusters)
 
-
-
-
-
-
-
-
-# ----------------------------------------------------------------
-# 5. 시각화 (선택 여부에 따른 분기)
-# ----------------------------------------------------------------
-if selected_clusters:
-    cluster_selected = selected_clusters[0]
+# --- 6) 시각화 수행 ---
+if final_selected_clusters:
+    cluster_selected = final_selected_clusters[0]
     st.subheader(f"🎯 선택 클러스터 집중 분석: {cluster_selected}")
-    create_cluster_network(filtered_analysis_results, [cluster_selected], cluster_limit=1, title_limit=title_limit)
+    create_cluster_network(
+        filtered_analysis_results,
+        [cluster_selected],
+        cluster_limit=1,
+        title_limit=title_limit
+    )
 else:
     st.subheader("📌 필터링된 VOC 기준 상위 클러스터 네트워크")
-    create_cluster_network(filtered_analysis_results, None, cluster_limit, title_limit)
+    create_cluster_network(
+        filtered_analysis_results,
+        None,
+        cluster_limit,
+        title_limit
+    )
