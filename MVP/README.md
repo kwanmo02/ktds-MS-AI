@@ -52,10 +52,8 @@ VOC 군집 분석을 통하여 빈도수가 많은 이슈 분석 및 개선 Poin
 
 ---
 
-## 7. 사용자 경험(UX) 특징
+## 7. 시연영상
 
-- 실시간 키워드 검색과 TOP 이슈 클러스터 추이 제공
-- 클러스터 직접 입력 시 오타·유사명 자동 처리로 현업 맞춤 분석 가능
-- 3D 네트워크 시각화 및 클러스터별 상세 이슈 탐색
+<iframe width="560" height="315" src="C:\Users\ktds\Desktop\ktds_km_webapp\시현영상.mp4" frameborder="0" allowfullscreen></iframe>
 
 ---
